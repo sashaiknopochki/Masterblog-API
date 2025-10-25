@@ -38,12 +38,30 @@ def handle_posts():
         return jsonify(data), 201
 
     # GET - Return all posts
+    # Validate posts before sorting
     invalid_posts = [post for post in POSTS if not validate_book_data(post)]
     if invalid_posts:
         return jsonify({
             "error": "Invalid post data on server",
         }), 500
-    return jsonify(POSTS)
+
+    # Get sorting parameters
+    sort = request.args.get('sort', 'id')
+    if sort not in ['id', 'title', 'content']:
+        sort = 'id'
+
+    direction = request.args.get('direction', 'asc')
+    if direction not in ['asc', 'desc']:
+        direction = 'asc'
+
+    # Create a sorted copy instead of modifying the original list
+    sorted_posts = sorted(
+        POSTS,
+        key=lambda post: post[sort],
+        reverse=(direction == 'desc')
+    )
+
+    return jsonify(sorted_posts)
 
 
 @app.route('/api/posts/<int:id>', methods=['DELETE', 'PUT'])
@@ -104,12 +122,12 @@ def search_posts():
 
         if match:
             search_results.append(post)
-        else:
-            return jsonify({"error": "No posts found matching the search criteria."}), 404
+
+    # Check if no results were found AFTER checking all posts
+    if not search_results:
+        return jsonify({"error": "No posts found matching the search criteria."}), 404
 
     return jsonify(search_results)
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=5002, debug=True)
-
-#test
