@@ -10,8 +10,27 @@ POSTS = [
 ]
 
 
+def validate_book_data(data):
+    """Validate a single post payload.
+    Expects a dict with at least 'title' and 'content' keys.
+    Returns True if valid, False otherwise.
+    """
+    if not isinstance(data, dict):
+        return False
+    if "title" not in data or "content" not in data:
+        return False
+    return True
+
+
 @app.route('/api/posts', methods=['GET'])
 def get_posts():
+    # Validate each post dict before returning. Do NOT pass a Response to the validator.
+    invalid_posts = [p for p in POSTS if not validate_book_data(p)]
+    if invalid_posts:
+        return jsonify({
+            "error": "Invalid post data on server",
+            "invalid_ids": [p.get("id") for p in invalid_posts]
+        }), 500
     return jsonify(POSTS)
 
 
