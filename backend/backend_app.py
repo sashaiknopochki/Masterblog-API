@@ -85,5 +85,29 @@ def update_post(post):
     return jsonify(post), 200
 
 
+@app.route('/api/posts/search')
+def search_posts():
+    title_query = request.args.get('title')
+    content_query = request.args.get('content')
+
+    # At least one search parameter must be provided
+    if not title_query and not content_query:
+        return jsonify({"error": "At least one query parameter required: 'title' or 'content'."}), 400
+
+    search_results = []
+    for post in POSTS:
+        match = False
+        if title_query and title_query.lower() in post['title'].lower():
+            match = True
+        if content_query and content_query.lower() in post['content'].lower():
+            match = True
+
+        if match:
+            search_results.append(post)
+        else:
+            return jsonify({"error": "No posts found matching the search criteria."}), 404
+
+    return jsonify(search_results)
+
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=5002, debug=True)
