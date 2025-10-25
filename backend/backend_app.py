@@ -46,18 +46,43 @@ def handle_posts():
     return jsonify(POSTS)
 
 
-@app.route('/api/posts/<int:id>', methods=['DELETE'])
-def delete_post(id):
-    """Delete a post by ID."""
-    # Read all posts and make sure a post with the id exists
+@app.route('/api/posts/<int:id>', methods=['DELETE', 'PUT'])
+def handle_post(id):
+    # Find the post with the given id
     post = next((post for post in POSTS if post["id"] == id), None)
     if post is None:
         return jsonify({"error": f"Post with id {id} not found"}), 404
-    # Delete the post
+
+    if request.method == 'DELETE':
+        return delete_post(post)
+    elif request.method == 'PUT':
+        return update_post(post)
+    return None
+
+
+def delete_post(post):
+    """Delete a post."""
     POSTS.remove(post)
     return jsonify({
-        "message": f"Post with id {id} has been deleted successfully."
+        "message": f"Post with id {post['id']} has been deleted successfully."
     }), 200
+
+
+def update_post(post):
+    """Update a post."""
+    data = request.get_json()
+
+    # Check if request has valid JSON
+    if not data:
+        return jsonify({"error": "Invalid JSON data"}), 400
+
+    # Update only the fields that are provided
+    if 'title' in data:
+        post['title'] = data['title']
+    if 'content' in data:
+        post['content'] = data['content']
+
+    return jsonify(post), 200
 
 
 if __name__ == '__main__':
