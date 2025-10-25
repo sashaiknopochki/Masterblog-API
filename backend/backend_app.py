@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 
 app = Flask(__name__)
@@ -11,7 +11,7 @@ POSTS = [
 
 
 def validate_book_data(data):
-    """Validate a single post payload.
+    """Validate a single post-payload.
     Expects a dict with at least 'title' and 'content' keys.
     Returns True if valid, False otherwise.
     """
@@ -22,14 +22,26 @@ def validate_book_data(data):
     return True
 
 
-@app.route('/api/posts', methods=['GET'])
-def get_posts():
-    # Validate each post dict before returning. Do NOT pass a Response to the validator.
-    invalid_posts = [p for p in POSTS if not validate_book_data(p)]
+@app.route('/api/posts', methods=['GET', 'POST'])
+def handle_posts():
+    # POST - Add a new post
+    if request.method == 'POST':
+        data = request.get_json()
+        if not validate_book_data(data):
+            return jsonify({"error": "Invalid post data"}), 400
+
+        # Auto-generate ID for the new post
+        new_id = max([post["id"] for post in POSTS], default=0) + 1
+        data["id"] = new_id
+
+        POSTS.append(data)
+        return jsonify(data), 201
+
+    # GET - Return all posts
+    invalid_posts = [post for post in POSTS if not validate_book_data(post)]
     if invalid_posts:
         return jsonify({
             "error": "Invalid post data on server",
-            "invalid_ids": [p.get("id") for p in invalid_posts]
         }), 500
     return jsonify(POSTS)
 
